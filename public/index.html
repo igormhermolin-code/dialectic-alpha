@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Dialectic is an AI debate arena that scores logic, evidence, clarity, and relevance."
+    />
+    <title>Dialectic — AI Debate Arena</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Libre+Caslon+Display&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="noise"></div>
+    <header class="site-header">
+      <a href="/" class="brand" aria-label="Dialectic home">
+        <span class="brand-mark">D</span>
+        <span>Dialectic</span>
+      </a>
+      <div class="header-right">
+        <label class="language-control">
+          <span class="sr-only">Language</span>
+          <select id="languageSelect" aria-label="Language">
+            <option value="en">English</option>
+            <option value="pt">Português</option>
+            <option value="zh">中文</option>
+            <option value="he">עברית</option>
+          </select>
+        </label>
+        <span id="modeBadge" class="mode-badge">Checking arena…</span>
+        <button id="rankingButton" class="ranking-button hidden" type="button" data-i18n="ranking">
+          Ranking
+        </button>
+        <span id="eloDisplay" class="elo hidden">ELO <strong>1200</strong></span>
+        <button id="profileButton" class="profile-button hidden" type="button" aria-label="Open profile menu">
+          <span id="avatarInitials" class="avatar">—</span>
+        </button>
+        <div id="profileMenu" class="profile-menu hidden">
+          <strong id="profileName">Challenger</strong>
+          <span><b id="profileElo">1200</b> ELO · <b id="profileMatches">0</b> <span id="profileDebatesLabel" data-i18n="debates">debates</span></span>
+          <button id="viewProfileButton" type="button" data-i18n="viewHistory">View debate history</button>
+          <button id="logoutButton" type="button" data-i18n="signOut">Sign out</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section id="loginScreen" class="login-screen">
+        <div class="login-manifesto">
+          <div class="eyebrow"><span></span> <span data-i18n="recordBegins">Your record begins here</span></div>
+          <h1><span data-i18n="buildReputation">Build a reputation</span><br /><em data-i18n="oneArgument">one argument at a time.</em></h1>
+          <p data-i18n="ratingFollows">
+            Your rating follows your performance. Strong reasoning earns ground;
+            weak claims give it back.
+          </p>
+          <div class="rating-mark">
+            <span data-i18n="startingRating">Starting rating</span>
+            <strong>1200</strong>
+            <small data-i18n="equalFooting">Every challenger begins on equal footing.</small>
+          </div>
+        </div>
+
+        <div class="auth-panel">
+          <div class="auth-tabs" role="tablist" aria-label="Account action">
+            <button id="signInTab" class="active" type="button" role="tab" aria-selected="true">
+              <span data-i18n="signIn">Sign in</span>
+            </button>
+            <button id="createTab" type="button" role="tab" aria-selected="false">
+              <span data-i18n="createAccount">Create account</span>
+            </button>
+          </div>
+
+          <form id="authForm" class="auth-form">
+            <div>
+              <span id="authKicker">Welcome back</span>
+              <h2 id="authTitle">Return to the arena.</h2>
+            </div>
+
+            <label for="username" data-i18n="username">Username</label>
+            <input
+              id="username"
+              name="username"
+              autocomplete="username"
+              minlength="3"
+              maxlength="24"
+              pattern="[A-Za-z0-9_-]+"
+              placeholder="your_name"
+              required
+            />
+
+            <label for="password" data-i18n="passphrase">Passphrase</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              minlength="8"
+              maxlength="72"
+              placeholder="At least 8 characters"
+              required
+            />
+
+            <button id="authSubmit" class="primary-button" type="submit">
+              Enter the arena <span>→</span>
+            </button>
+            <label class="remember-control">
+              <input id="rememberMe" type="checkbox" checked />
+              <span data-i18n="rememberMe">Keep me signed in on this device</span>
+            </label>
+            <p class="local-account-note" data-i18n="passwordNote">
+              This MVP stores your account and rating privately in this browser.
+            </p>
+          </form>
+        </div>
+      </section>
+
+      <section id="setupScreen" class="setup-screen hidden">
+        <div class="eyebrow"><span></span> <span data-i18n="ideasEnter">Ideas enter. Arguments survive.</span></div>
+        <h1><span data-i18n="enterArena">Enter the arena</span><br /><em data-i18n="withIdea">with an idea.</em></h1>
+        <p class="intro" data-i18n="intro">
+          Debate a relentless AI opponent. Every claim is judged on logic, evidence,
+          clarity, and relevance—not volume.
+        </p>
+
+        <div class="setup-lower">
+          <form id="setupForm" class="setup-card">
+            <label for="topic" data-i18n="motion">The motion</label>
+            <textarea
+              id="topic"
+              maxlength="240"
+              placeholder="e.g. Social media has done more harm than good"
+              required
+            ></textarea>
+
+            <fieldset class="opponent-mode-fieldset">
+              <legend>Opponent</legend>
+              <div class="opponent-mode-picker">
+                <label>
+                  <input type="radio" name="opponentMode" value="ai" checked />
+                  <span><strong>AI</strong><small>Instant match · 3 difficulty levels</small></span>
+                </label>
+                <label>
+                  <input type="radio" name="opponentMode" value="human" />
+                  <span><strong>Online player</strong><small>ELO-based matchmaking</small></span>
+                </label>
+              </div>
+            </fieldset>
+
+            <div class="setup-row">
+              <fieldset>
+                <legend data-i18n="yourPosition">Your position</legend>
+                <div class="stance-picker">
+                  <label>
+                    <input type="radio" name="stance" value="for" checked />
+                    <span data-i18n="forMotion">For the motion</span>
+                  </label>
+                  <label>
+                    <input type="radio" name="stance" value="against" />
+                    <span data-i18n="against">Against</span>
+                  </label>
+                </div>
+              </fieldset>
+
+              <fieldset>
+                <legend data-i18n="format">Format</legend>
+                <div class="rounds-picker">
+                  <label>
+                    <input type="radio" name="rounds" value="3" checked />
+                    <span><strong>3</strong> <small data-i18n="roundsLabel">rounds</small></span>
+                  </label>
+                  <label>
+                    <input type="radio" name="rounds" value="5" />
+                    <span><strong>5</strong> <small data-i18n="roundsLabel">rounds</small></span>
+                  </label>
+                </div>
+              </fieldset>
+            </div>
+
+            <fieldset id="difficultyFieldset" class="difficulty-fieldset">
+              <legend data-i18n="opponentLevel">Opponent level</legend>
+              <div class="difficulty-picker">
+                <label>
+                  <input type="radio" name="difficulty" value="baby" />
+                  <span>
+                    <strong data-i18n="babyLevel">Baby</strong>
+                    <small data-i18n="babyHint">Weak replies with useful openings</small>
+                  </span>
+                </label>
+                <label>
+                  <input type="radio" name="difficulty" value="adult" checked />
+                  <span>
+                    <strong data-i18n="adultLevel">Adult</strong>
+                    <small data-i18n="adultHint">Balanced competitive debate</small>
+                  </span>
+                </label>
+                <label>
+                  <input type="radio" name="difficulty" value="harvey" />
+                  <span>
+                    <strong>Harvey Specter</strong>
+                    <small data-i18n="harveyHint">Sharp, strategic, unconventional</small>
+                  </span>
+                </label>
+              </div>
+            </fieldset>
+
+            <button class="primary-button" type="submit">
+              <span data-i18n="takePosition">Take your position</span> <span>→</span>
+            </button>
+          </form>
+
+          <div class="rubric-preview" aria-label="Scoring rubric">
+            <div><span>01</span><strong data-i18n="logic">Logic</strong><small data-i18n="logicHint">Does it follow?</small></div>
+            <div><span>02</span><strong data-i18n="evidence">Evidence</strong><small data-i18n="evidenceHint">Can it stand?</small></div>
+            <div><span>03</span><strong data-i18n="clarity">Clarity</strong><small data-i18n="clarityHint">Can it be understood?</small></div>
+            <div><span>04</span><strong data-i18n="relevance">Relevance</strong><small data-i18n="relevanceHint">Does it answer?</small></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="matchmakingScreen" class="matchmaking-screen hidden">
+        <div class="matchmaking-card">
+          <div class="queue-pulse"><i></i><i></i><i></i></div>
+          <span class="eyebrow"><span></span> MATCHMAKING</span>
+          <h1>Finding your<br /><em>closest rival.</em></h1>
+          <p>Searching for an online player with a similar ELO, the opposite position, language, and round format.</p>
+          <div class="queue-details">
+            <div><span>Your ELO</span><strong id="queueElo">1200</strong></div>
+            <div><span>Search range</span><strong>±125+</strong></div>
+            <div><span>Waiting</span><strong id="queueTimer">00:00</strong></div>
+          </div>
+          <button id="cancelMatchmaking" class="text-button" type="button">← Cancel search</button>
+        </div>
+      </section>
+
+      <section id="profileScreen" class="user-page hidden">
+        <div class="user-page-head">
+          <button id="profileBackButton" class="text-button" type="button">← <span data-i18n="backArena">Back to arena</span></button>
+          <div class="eyebrow"><span></span> <span data-i18n="challengerRecord">Challenger record</span></div>
+          <h1><span id="userPageName">Your</span><br /><em data-i18n="debateHistory">debate history.</em></h1>
+          <div class="user-statline">
+            <div><strong id="userPageElo">1200</strong><span data-i18n="currentElo">Current ELO</span></div>
+            <div><strong id="userPageMatches">0</strong><span data-i18n="debates">Debates</span></div>
+            <div><strong id="userPageWins">0</strong><span data-i18n="wins">Wins</span></div>
+          </div>
+        </div>
+        <div class="history-section">
+          <div class="history-heading">
+            <div>
+              <span data-i18n="pastDebates">Past debates</span>
+              <h2 data-i18n="argumentsRecord">Your arguments, on the record.</h2>
+            </div>
+            <button id="profileNewDebateButton" class="primary-button" type="button">
+              <span data-i18n="newDebate">New debate</span> <span>→</span>
+            </button>
+          </div>
+          <div id="debateHistory" class="debate-history"></div>
+        </div>
+      </section>
+
+      <section id="rankingScreen" class="ranking-screen hidden">
+        <div class="ranking-hero">
+          <button id="rankingBackButton" class="text-button" type="button">← <span data-i18n="backArena">Back to arena</span></button>
+          <div class="eyebrow"><span></span> <span data-i18n="globalStandings">Arena standings</span></div>
+          <h1><span data-i18n="bestArguments">The strongest arguments</span><br /><em data-i18n="riseTop">rise to the top.</em></h1>
+          <p data-i18n="rankingIntro">Every account is ranked by ELO. Debate more, reason better, and climb the table.</p>
+        </div>
+        <div class="ranking-content">
+          <div class="ranking-summary">
+            <span data-i18n="rankedChallengers">Ranked challengers</span>
+            <strong id="rankingCount">0</strong>
+          </div>
+          <div class="ranking-table-head">
+            <span data-i18n="rank">Rank</span>
+            <span data-i18n="challenger">Challenger</span>
+            <span data-i18n="debates">Debates</span>
+            <span>ELO</span>
+          </div>
+          <div id="rankingList" class="ranking-list"></div>
+        </div>
+      </section>
+
+      <section id="arenaScreen" class="arena-screen hidden">
+        <div class="arena-topline">
+          <button id="leaveButton" class="text-button">← <span data-i18n="leaveDebate">Leave debate</span></button>
+          <div class="round-indicator"><span data-i18n="round">ROUND</span> <strong id="roundNumber">1</strong> / <span id="roundTotal">3</span></div>
+          <div class="timer" id="timer">03:00</div>
+        </div>
+
+        <div class="motion-block">
+          <span data-i18n="tonightsMotion">Tonight's motion</span>
+          <h2 id="motionTitle"></h2>
+        </div>
+
+        <div class="arena-grid">
+          <section class="debate-stage">
+            <div class="fighters">
+              <div class="fighter user-fighter">
+                <div class="fighter-avatar">YOU</div>
+                <div>
+                  <span id="userStanceLabel">For the motion</span>
+                  <strong data-i18n="challenger">The Challenger</strong>
+                </div>
+              </div>
+              <div class="versus">VS</div>
+              <div class="fighter ai-fighter">
+                <div>
+                  <span id="aiStanceLabel">Against the motion</span>
+                  <strong id="opponentName" data-i18n="adversary">The Adversary</strong>
+                </div>
+                <div id="opponentAvatar" class="fighter-avatar ai-core">AI</div>
+              </div>
+            </div>
+            <div id="voiceToolbar" class="voice-toolbar">
+              <button id="voiceToggle" class="voice-toggle active" type="button" aria-pressed="true">
+                <span class="speaker-icon">◖))</span>
+                AI voice on
+              </button>
+              <span data-i18n="aiAudioDisclosure">Spoken audio is AI-generated.</span>
+            </div>
+
+            <div id="transcript" class="transcript">
+              <div class="arena-prompt">
+                <span data-i18n="openingStatement">Your opening statement</span>
+                <p data-i18n="openingHint">Make a claim, show your reasoning, and give the judge something concrete to weigh.</p>
+              </div>
+            </div>
+
+            <form id="argumentForm" class="argument-composer">
+              <div class="composer-head">
+                <label for="argument" data-i18n="yourArgument">Your argument</label>
+                <span id="charCount">0 / 2000</span>
+              </div>
+              <textarea
+                id="argument"
+                maxlength="2000"
+                minlength="10"
+                placeholder="Build your case…"
+                required
+              ></textarea>
+              <div class="composer-footer">
+                <span data-i18n="submitHint">⌘ + Enter to submit</span>
+                <div class="composer-actions">
+                  <button id="micButton" class="mic-button" type="button" aria-pressed="false">
+                    <span class="mic-icon">●</span>
+                    <span class="mic-label" data-i18n="useMicrophone">Use microphone</span>
+                  </button>
+                  <button id="submitArgument" class="primary-button" type="submit">
+                    <span data-i18n="submitArgument">Submit argument</span> <span>→</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </section>
+
+          <aside class="score-panel">
+            <div class="score-panel-head">
+              <span data-i18n="liveJudge">Live judge</span>
+              <div class="judge-status"><i></i> <span data-i18n="listening">Listening</span></div>
+            </div>
+            <div class="overall-score">
+              <div>
+                <span id="overallScore">—</span>
+                <small>/ 100</small>
+              </div>
+              <p data-i18n="argumentScore">Argument score</p>
+            </div>
+            <div id="scoreBars" class="score-bars">
+              <div data-key="logic"><div><span data-i18n="logic">Logic</span><strong>—</strong></div><i><b></b></i></div>
+              <div data-key="evidence"><div><span data-i18n="evidence">Evidence</span><strong>—</strong></div><i><b></b></i></div>
+              <div data-key="clarity"><div><span data-i18n="clarity">Clarity</span><strong>—</strong></div><i><b></b></i></div>
+              <div data-key="relevance"><div><span data-i18n="relevance">Relevance</span><strong>—</strong></div><i><b></b></i></div>
+            </div>
+            <div id="judgeNotes" class="judge-notes">
+              <span data-i18n="judgeNotes">Judge's notes</span>
+              <p data-i18n="feedbackAfter">Your feedback will appear after the first exchange.</p>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section id="resultsScreen" class="results-screen hidden">
+        <span class="eyebrow result-eyebrow"><span></span> <span data-i18n="judgeRuled">The judge has ruled</span></span>
+        <h1 id="resultHeadline">Debate complete.</h1>
+        <p id="resultVerdict" class="result-verdict"></p>
+        <div class="result-score"><strong id="finalScore">0</strong><span>/100</span></div>
+        <div id="eloResult" class="elo-result">
+          <span data-i18n="rating">Rating</span>
+          <strong id="resultElo">1200</strong>
+          <small id="eloChange">No change</small>
+        </div>
+        <div id="finalBreakdown" class="final-breakdown"></div>
+        <div class="result-actions">
+          <button id="newDebateButton" class="primary-button"><span data-i18n="enterNewArena">Enter a new arena</span> <span>→</span></button>
+        </div>
+      </section>
+    </main>
+
+    <div id="ceremonyOverlay" class="ceremony-overlay hidden" aria-live="assertive">
+      <div class="ceremony-rings"></div>
+      <div id="ceremonyIcon" class="ceremony-icon">🥊</div>
+      <strong id="ceremonyTitle">ROUND 1</strong>
+      <span id="ceremonySubtitle"></span>
+    </div>
+
+    <div id="toast" class="toast" role="status"></div>
+    <script src="/i18n.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>

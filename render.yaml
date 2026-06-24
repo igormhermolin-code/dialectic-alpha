@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: dialectic-alpha
+    runtime: docker
+    plan: starter
+    healthCheckPath: /api/health
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-5.5
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /var/data
+    disk:
+      name: dialectic-data
+      mountPath: /var/data
+      sizeGB: 1
