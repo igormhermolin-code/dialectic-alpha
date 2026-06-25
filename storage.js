@@ -8,6 +8,11 @@ const DATABASE_URL = process.env.TURSO_DATABASE_URL || `file:${path.join(DATA_DI
 const DATABASE_AUTH_TOKEN = process.env.TURSO_AUTH_TOKEN;
 
 if (DATABASE_URL.startsWith("file:")) fs.mkdirSync(DATA_DIR, { recursive: true });
+if (!/^(file:|libsql:\/\/|https:\/\/)/i.test(DATABASE_URL)) {
+  throw new Error(
+    "TURSO_DATABASE_URL is invalid. Paste the database URL beginning with libsql://, not the authentication token."
+  );
+}
 
 const db = createClient({
   url: DATABASE_URL,
