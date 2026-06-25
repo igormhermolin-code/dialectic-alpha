@@ -2,6 +2,7 @@ const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
 const {
+  ready: storageReady,
   createUser,
   authenticate,
   createSession,
@@ -81,6 +82,7 @@ const server = http.createServer(async (req, res) => {
   }
   try {
     if (req.method === "GET" && req.url === "/api/health") {
+      await storageReady;
       return json(res, 200, {
         ok: true,
         mode: API_KEY ? "live" : "alpha",
@@ -94,87 +96,87 @@ const server = http.createServer(async (req, res) => {
       validateCredentials(body);
       let user;
       try {
-        user = createUser(body.username.trim(), body.password);
+        user = await createUser(body.username.trim(), body.password);
       } catch (error) {
         if (error.code === "USERNAME_TAKEN") {
           throw badRequest("That username is already registered.");
         }
         throw error;
       }
-      setSessionCookie(res, createSession(user.id, Boolean(body.remember)));
+      setSessionCookie(res, await createSession(user.id, Boolean(body.remember)));
       return json(res, 201, { user });
     }
 
     if (req.method === "POST" && req.url === "/api/auth/login") {
       const body = await readJson(req);
       validateCredentials(body);
-      const user = authenticate(body.username, body.password);
+      const user = await authenticate(body.username, body.password);
       if (!user) {
         const error = badRequest("Username or passphrase did not match.");
         error.statusCode = 401;
         throw error;
       }
-      setSessionCookie(res, createSession(user.id, Boolean(body.remember)));
+      setSessionCookie(res, await createSession(user.id, Boolean(body.remember)));
       return json(res, 200, { user });
     }
 
     if (req.method === "POST" && req.url === "/api/auth/logout") {
-      deleteSession(getSessionToken(req));
+      await deleteSession(getSessionToken(req));
       clearSessionCookie(res);
       return json(res, 200, { ok: true });
     }
 
     if (req.method === "GET" && req.url === "/api/auth/me") {
-      const user = getUserBySession(getSessionToken(req));
+      const user = await getUserBySession(getSessionToken(req));
       if (!user) return json(res, 401, { error: "Not signed in." });
       return json(res, 200, { user });
     }
 
     if (req.method === "GET" && req.url === "/api/ranking") {
-      requireUser(req);
-      return json(res, 200, { ranking: getRanking() });
+      await requireUser(req);
+      return json(res, 200, { ranking: await getRanking() });
     }
 
     if (req.method === "GET" && req.url === "/api/history") {
-      const user = requireUser(req);
-      return json(res, 200, { history: getHistory(user.id) });
+      const user = await requireUser(req);
+      return json(res, 200, { history: await getHistory(user.id) });
     }
 
     if (req.method === "POST" && req.url === "/api/matchmaking/join") {
-      const user = requireUser(req);
+      const user = await requireUser(req);
       const body = await readJson(req);
       validateMatchmakingRequest(body);
-      return json(res, 200, joinMatchmaking(user.id, body));
+      return json(res, 200, await joinMatchmaking(user.id, body));
     }
 
     if (req.method === "GET" && req.url === "/api/matchmaking/status") {
-      const user = requireUser(req);
-      return json(res, 200, getMatchmakingStatus(user.id));
+      const user = await requireUser(req);
+      return json(res, 200, await getMatchmakingStatus(user.id));
     }
 
     if (req.method === "POST" && req.url === "/api/matchmaking/leave") {
-      const user = requireUser(req);
-      leaveMatchmaking(user.id);
+      const user = await requireUser(req);
+      await leaveMatchmaking(user.id);
       return json(res, 200, { ok: true });
     }
 
     const matchRoute = req.url.match(/^\/api\/matches\/([a-f0-9-]{20,64})(?:\/turn)?$/i);
     if (matchRoute && req.method === "GET" && !req.url.endsWith("/turn")) {
-      const user = requireUser(req);
-      const match = getHumanMatch(matchRoute[1], user.id);
+      const user = await requireUser(req);
+      const match = await getHumanMatch(matchRoute[1], user.id);
       if (!match) return json(res, 404, { error: "Match not found." });
       return json(res, 200, { match });
     }
 
     if (matchRoute && req.method === "POST" && req.url.endsWith("/turn")) {
-      const user = requireUser(req);
+      const user = await requireUser(req);
       const body = await readJson(req);
       if (!isText(body.text, 10, 2000)) {
         throw badRequest("Your argument must be between 10 and 2,000 characters.");
       }
       let match;
       try {
-        match = submitHumanTurn(matchRoute[1], user.id, body.text.trim());
+        match = await submitHumanTurn(matchRoute[1], user.id, body.text.trim());
       } catch (error) {
         if (error.code === "NOT_YOUR_TURN") throw badRequest("Wait for your opponent's turn.");
         if (error.code?.startsWith("MATCH_")) throw badRequest("This match is no longer active.");
@@ -188,8 +190,8 @@ const server = http.createServer(async (req, res) => {
           console.error("Live human-match judging failed; using calibrated fallback.", error);
           verdict = createDemoHumanVerdict(match);
         }
-        completeHumanMatch(match.id, verdict.player_one, verdict.player_two);
-        match = getHumanMatch(match.id, user.id);
+        await completeHumanMatch(match.id, verdict.player_one, verdict.player_two);
+        match = await getHumanMatch(match.id, user.id);
       }
       return json(res, 200, { match });
     }
@@ -253,7 +255,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === "POST" && req.url === "/api/debate") {
-      requireUser(req);
+      await requireUser(req);
       const body = await readJson(req);
       validateDebateRequest(body);
 
@@ -269,7 +271,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === "POST" && req.url === "/api/final") {
-      const user = requireUser(req);
+      const user = await requireUser(req);
       const body = await readJson(req);
       validateDebateRequest(body, true);
 
@@ -278,7 +280,7 @@ const server = http.createServer(async (req, res) => {
         : createDemoFinal(body).evaluation;
       let completion;
       try {
-        completion = completeDebate(user.id, body, evaluation);
+        completion = await completeDebate(user.id, body, evaluation);
       } catch (error) {
         if (error.code === "DEBATE_ALREADY_SCORED") {
           throw badRequest("This debate has already been scored.");
@@ -751,8 +753,8 @@ function validateMatchmakingRequest(body) {
   }
 }
 
-function requireUser(req) {
-  const user = getUserBySession(getSessionToken(req));
+async function requireUser(req) {
+  const user = await getUserBySession(getSessionToken(req));
   if (!user) {
     const error = new Error("Authentication required.");
     error.statusCode = 401;

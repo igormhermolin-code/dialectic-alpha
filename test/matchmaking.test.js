@@ -18,21 +18,21 @@ const {
 
 test.after(() => fs.rmSync(dataDir, { recursive: true, force: true }));
 
-test("matches opposite stances by ELO and persists the judged result", () => {
-  const first = createUser("match_alpha", "password123");
-  const second = createUser("match_beta", "password123");
+test("matches opposite stances by ELO and persists the judged result", async () => {
+  const first = await createUser("match_alpha", "password123");
+  const second = await createUser("match_beta", "password123");
 
   assert.equal(
-    joinMatchmaking(first.id, {
+    (await joinMatchmaking(first.id, {
       topic: "Public transport should be free",
       stance: "for",
       language: "en",
       rounds: 1
-    }).status,
+    })).status,
     "queued"
   );
 
-  const joined = joinMatchmaking(second.id, {
+  const joined = await joinMatchmaking(second.id, {
     topic: "A different suggestion",
     stance: "against",
     language: "en",
@@ -41,29 +41,29 @@ test("matches opposite stances by ELO and persists the judged result", () => {
   assert.equal(joined.status, "matched");
   assert.equal(joined.match.opponent.username, "match_alpha");
 
-  submitHumanTurn(
+  await submitHumanTurn(
     joined.match.id,
     first.id,
     "Free transit improves access because lower-income workers can reach more jobs."
   );
-  const judging = submitHumanTurn(
+  const judging = await submitHumanTurn(
     joined.match.id,
     second.id,
     "Universal subsidies also pay for riders who can afford fares and may crowd out targeted service."
   );
   assert.equal(judging.status, "judging");
 
-  completeHumanMatch(
+  await completeHumanMatch(
     joined.match.id,
     evaluation(68, "Access"),
     evaluation(77, "Targeting")
   );
-  const result = getHumanMatch(joined.match.id, first.id);
+  const result = await getHumanMatch(joined.match.id, first.id);
   assert.equal(result.status, "complete");
   assert.equal(result.result, "loss");
   assert.ok(result.eloChange < 0);
-  assert.equal(getHistory(first.id).length, 1);
-  assert.equal(getHistory(second.id).length, 1);
+  assert.equal((await getHistory(first.id)).length, 1);
+  assert.equal((await getHistory(second.id)).length, 1);
 });
 
 function evaluation(overall, strongestPoint) {

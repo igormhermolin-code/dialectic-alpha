@@ -20,7 +20,7 @@ heuristic scores, so the complete three-round flow remains testable.
 
 ## MVP architecture
 
-- Dependency-free Node HTTP server
+- Lightweight Node HTTP server
 - Static responsive frontend
 - OpenAI Responses API for the opponent and judge
 - Structured Outputs for reliable rubric scores
@@ -47,8 +47,8 @@ heuristic scores, so the complete three-round flow remains testable.
 - The threshold itself is neutral.
 - Above the threshold, higher scores gain progressively more ELO, capped at +30.
 
-Accounts, password hashes, sessions, ELO, rankings, and history are persisted in
-server-side SQLite. See `DEPLOYMENT.md` for the included Docker and Render deployment.
+Accounts, password hashes, sessions, ELO, rankings, and history are persisted in Turso
+in production, with a local SQLite fallback for development. See `DEPLOYMENT.md`.
 
 ## Next production layer
 
