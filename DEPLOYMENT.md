@@ -10,8 +10,9 @@ debate history live in Turso (remote SQLite/libSQL). Local development falls bac
 2. Push this repository to GitHub.
 3. In Render, create a Blueprint from the repository.
 4. Add `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` when prompted.
-5. Add `OPENAI_API_KEY` for live AI, or leave it empty for Alpha fallback mode.
-6. Deploy on the free Render web-service plan.
+5. Add `GEMINI_API_KEY` for free-tier live debate and judging.
+6. Optionally add `OPENAI_API_KEY` only for generated voice and microphone transcription.
+7. Deploy on the free Render web-service plan.
 
 The `render.yaml` file configures HTTPS, the health check, Turso credentials, and the
 free native Node.js web service. Render may spin down an inactive free service, but Turso keeps

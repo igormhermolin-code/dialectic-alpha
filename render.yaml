@@ -7,8 +7,12 @@ services:
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
-      - key: OPENAI_MODEL
-        value: gpt-5.5
+      - key: AI_PROVIDER
+        value: gemini
+      - key: GEMINI_MODEL
+        value: gemini-3.1-flash-lite
+      - key: GEMINI_API_KEY
+        sync: false
       - key: NODE_ENV
         value: production
       - key: TURSO_DATABASE_URL

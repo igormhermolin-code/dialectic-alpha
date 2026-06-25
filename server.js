@@ -22,8 +22,22 @@ const {
 loadEnvFile();
 
 const PORT = Number(process.env.PORT || 3000);
-const MODEL = process.env.OPENAI_MODEL || "gpt-5.5";
-const API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-5.5";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const AI_PROVIDER =
+  process.env.AI_PROVIDER === "openai" && OPENAI_API_KEY
+    ? "openai"
+    : process.env.AI_PROVIDER === "gemini" && GEMINI_API_KEY
+      ? "gemini"
+      : GEMINI_API_KEY
+        ? "gemini"
+        : OPENAI_API_KEY
+          ? "openai"
+          : "alpha";
+const TEXT_AI_AVAILABLE = AI_PROVIDER !== "alpha";
+const TEXT_MODEL = AI_PROVIDER === "gemini" ? GEMINI_MODEL : OPENAI_MODEL;
 const PUBLIC_DIR = path.join(__dirname, "public");
 
 const mimeTypes = {
@@ -85,9 +99,10 @@ const server = http.createServer(async (req, res) => {
       await storageReady;
       return json(res, 200, {
         ok: true,
-        mode: API_KEY ? "live" : "alpha",
-        model: MODEL,
-        voice: Boolean(API_KEY)
+        mode: TEXT_AI_AVAILABLE ? "live" : "alpha",
+        provider: AI_PROVIDER,
+        model: TEXT_MODEL,
+        voice: Boolean(OPENAI_API_KEY)
       });
     }
 
@@ -185,7 +200,9 @@ const server = http.createServer(async (req, res) => {
       if (match.status === "judging") {
         let verdict;
         try {
-          verdict = API_KEY ? await judgeHumanMatch(match) : createDemoHumanVerdict(match);
+          verdict = TEXT_AI_AVAILABLE
+            ? await judgeHumanMatch(match)
+            : createDemoHumanVerdict(match);
         } catch (error) {
           console.error("Live human-match judging failed; using calibrated fallback.", error);
           verdict = createDemoHumanVerdict(match);
@@ -197,7 +214,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === "POST" && req.url === "/api/transcribe") {
-      if (!API_KEY) return json(res, 503, { error: "Voice input requires an OpenAI API key." });
+      if (!OPENAI_API_KEY) return json(res, 503, { error: "Voice input requires an OpenAI API key." });
       const audio = await readBuffer(req, 25_000_000);
       if (!audio.length) throw badRequest("No audio was recorded.");
 
@@ -216,7 +233,7 @@ const server = http.createServer(async (req, res) => {
 
       const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
         method: "POST",
-        headers: { Authorization: `Bearer ${API_KEY}` },
+        headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
         body: form
       });
       const data = await response.json();
@@ -225,7 +242,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === "POST" && req.url === "/api/speech") {
-      if (!API_KEY) return json(res, 503, { error: "AI speech requires an OpenAI API key." });
+      if (!OPENAI_API_KEY) return json(res, 503, { error: "AI speech requires an OpenAI API key." });
       const body = await readJson(req);
       if (!isText(body.text, 1, 3000)) throw badRequest("Speech text is invalid.");
       const voiceConfig = getVoiceConfig(body.language);
@@ -259,11 +276,11 @@ const server = http.createServer(async (req, res) => {
       const body = await readJson(req);
       validateDebateRequest(body);
 
-      if (!API_KEY) {
+      if (!TEXT_AI_AVAILABLE) {
         return json(res, 200, createDemoTurn(body));
       }
 
-      await moderate(`${body.topic}\n${body.argument}`);
+      if (AI_PROVIDER === "openai") await moderate(`${body.topic}\n${body.argument}`);
       const aiReply = await generateOpponentReply(body);
       const evaluation = normalizeEvaluation(await judgeTurn(body, aiReply));
 
@@ -275,7 +292,7 @@ const server = http.createServer(async (req, res) => {
       const body = await readJson(req);
       validateDebateRequest(body, true);
 
-      const evaluation = API_KEY
+      const evaluation = TEXT_AI_AVAILABLE
         ? normalizeEvaluation(await judgeFinal(body))
         : createDemoFinal(body).evaluation;
       let completion;
@@ -310,7 +327,11 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`Dialectic is running at http://localhost:${PORT}`);
-  console.log(API_KEY ? `Alpha Test · live AI · ${MODEL}` : "Alpha Test · add OPENAI_API_KEY for live AI");
+  console.log(
+    TEXT_AI_AVAILABLE
+      ? `Alpha Test · ${AI_PROVIDER} · ${TEXT_MODEL}`
+      : "Alpha Test · add GEMINI_API_KEY or OPENAI_API_KEY for live AI"
+  );
 });
 
 async function generateOpponentReply({
@@ -357,8 +378,8 @@ async function generateOpponentReply({
     `Write the entire response in ${languageName}. Do not switch languages unless quoting the user's exact words.`
   ].join("\n\n");
 
-  const response = await openAIResponse({
-    model: MODEL,
+  const response = await textAIResponse({
+    model: TEXT_MODEL,
     reasoning: { effort: difficulty === "harvey" ? "high" : difficulty === "adult" ? "medium" : "low" },
     text: { verbosity: difficulty === "baby" ? "low" : "medium" },
     instructions:
@@ -424,8 +445,8 @@ async function judgeFinal(body) {
 }
 
 async function structuredResponse(instructions, input, name) {
-  const response = await openAIResponse({
-    model: MODEL,
+  const response = await textAIResponse({
+    model: TEXT_MODEL,
     reasoning: { effort: "medium" },
     instructions,
     input,
@@ -440,7 +461,7 @@ async function structuredResponse(instructions, input, name) {
     }
   });
 
-  return JSON.parse(extractOutputText(response));
+  return parseStructuredText(extractOutputText(response));
 }
 
 async function judgeHumanMatch(match) {
@@ -452,8 +473,8 @@ async function judgeHumanMatch(match) {
     })
     .join("\n\n");
   const languageName = getLanguageName(match.language);
-  const response = await openAIResponse({
-    model: MODEL,
+  const response = await textAIResponse({
+    model: TEXT_MODEL,
     reasoning: { effort: "high" },
     instructions:
       "You are an impartial championship debate judge. Score each human independently and never favor a viewpoint.",
@@ -476,7 +497,7 @@ async function judgeHumanMatch(match) {
       }
     }
   });
-  const result = JSON.parse(extractOutputText(response));
+  const result = parseStructuredText(extractOutputText(response));
   return {
     player_one: normalizeEvaluation(result.player_one),
     player_two: normalizeEvaluation(result.player_two)
@@ -501,6 +522,11 @@ async function moderate(input) {
   }
 }
 
+async function textAIResponse(payload) {
+  if (AI_PROVIDER === "gemini") return geminiResponse(payload);
+  return openAIResponse(payload);
+}
+
 async function openAIResponse(payload) {
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
@@ -513,10 +539,52 @@ async function openAIResponse(payload) {
   return data;
 }
 
+async function geminiResponse(payload) {
+  const format = payload.text?.format;
+  const request = {
+    model: payload.model || GEMINI_MODEL,
+    messages: [
+      { role: "system", content: payload.instructions || "Respond helpfully." },
+      { role: "user", content: String(payload.input || "") }
+    ],
+    reasoning_effort: normalizeGeminiReasoning(payload.reasoning?.effort),
+    max_completion_tokens: 1800
+  };
+  if (format?.type === "json_schema") {
+    request.response_format = {
+      type: "json_schema",
+      json_schema: {
+        name: format.name,
+        strict: true,
+        schema: format.schema
+      }
+    };
+  }
+
+  const response = await fetch(
+    "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${GEMINI_API_KEY}`
+      },
+      body: JSON.stringify(request)
+    }
+  );
+  const data = await response.json();
+  if (!response.ok) throw providerError("Gemini", data, response.status);
+  const text = data.choices?.[0]?.message?.content;
+  if (!text) throw new Error("Gemini returned no text output.");
+  return {
+    output: [{ content: [{ type: "output_text", text }] }]
+  };
+}
+
 function openAIHeaders() {
   return {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${API_KEY}`
+    Authorization: `Bearer ${OPENAI_API_KEY}`
   };
 }
 
@@ -530,6 +598,26 @@ function openAIError(data, status) {
   return error;
 }
 
+function providerError(provider, data, status) {
+  const message =
+    data?.error?.message || data?.error?.status || `${provider} request failed`;
+  const error = new Error(message);
+  error.statusCode = status >= 400 && status < 500 ? 400 : 502;
+  error.publicMessage =
+    status === 401 || status === 403
+      ? `The ${provider} API key is invalid or does not have access to this model.`
+      : status === 429
+        ? `${provider}'s free limit was reached. Wait for the quota to reset and try again.`
+        : `The ${provider} debate model is temporarily unavailable. Please try again.`;
+  return error;
+}
+
+function normalizeGeminiReasoning(effort) {
+  if (effort === "high") return "high";
+  if (effort === "medium") return "medium";
+  return "low";
+}
+
 function extractOutputText(response) {
   const text = response.output
     ?.flatMap((item) => item.content || [])
@@ -537,6 +625,14 @@ function extractOutputText(response) {
 
   if (!text) throw new Error("The model returned no text output.");
   return text;
+}
+
+function parseStructuredText(text) {
+  const clean = String(text)
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "");
+  return JSON.parse(clean);
 }
 
 function createDemoTurn(body) {

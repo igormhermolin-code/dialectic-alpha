@@ -9,25 +9,25 @@ Requires Node.js 20 or newer.
 
 ```bash
 cp .env.example .env
-# Add your OpenAI API key to .env for live mode.
+# Add a Gemini API key for free-tier live debate and judging.
 npm start
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
 
-Without an API key, the app runs in demo mode with deterministic opponent replies and
-heuristic scores, so the complete three-round flow remains testable.
+With `GEMINI_API_KEY`, the app uses Gemini for live debate and judging. Without a text
+AI key, it runs in Alpha fallback mode so the complete flow remains testable.
 
 ## MVP architecture
 
 - Lightweight Node HTTP server
 - Static responsive frontend
-- OpenAI Responses API for the opponent and judge
+- Gemini API free tier for the opponent and judge
 - Structured Outputs for reliable rubric scores
 - Separate opponent and judge prompts to reduce self-scoring bias
 - Moderation before generated debate responses
-- Microphone recording with `gpt-4o-mini-transcribe`
-- Spoken AI replies with `gpt-4o-mini-tts` and an explicit AI-voice disclosure
+- Optional microphone recording with OpenAI `gpt-4o-mini-transcribe`
+- Optional spoken replies with OpenAI `gpt-4o-mini-tts`; browser voices remain a fallback
 - Browser-local accounts with persistent ELO and debate totals
 - Per-user debate history with win, loss, draw, score, rubric, and ELO changes
 - Salted PBKDF2 password hashes with remembered or session-only sign-in

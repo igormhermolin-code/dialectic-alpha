@@ -762,7 +762,9 @@ async function checkHealth() {
     const response = await fetch("/api/health");
     const data = await response.json();
     $("#modeBadge").textContent =
-      data.mode === "live" ? `Alpha Test · ${data.model}` : "Alpha Test";
+      data.mode === "live"
+        ? `Alpha Test · ${data.provider === "gemini" ? "Gemini" : "OpenAI"}`
+        : "Alpha Test";
     state.voiceAvailable = Boolean(data.voice);
     if (!state.voiceAvailable) {
       $("#micButton").title = "Add an OpenAI API key to enable transcription.";
