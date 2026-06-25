@@ -1,8 +1,10 @@
 services:
   - type: web
     name: dialectic-alpha
-    runtime: docker
+    runtime: node
     plan: free
+    buildCommand: npm install
+    startCommand: npm start
     healthCheckPath: /api/health
     envVars:
       - key: OPENAI_MODEL

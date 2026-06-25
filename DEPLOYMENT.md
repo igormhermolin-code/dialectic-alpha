@@ -14,7 +14,7 @@ debate history live in Turso (remote SQLite/libSQL). Local development falls bac
 6. Deploy on the free Render web-service plan.
 
 The `render.yaml` file configures HTTPS, the health check, Turso credentials, and the
-free Docker web service. Render may spin down an inactive free service, but Turso keeps
+free native Node.js web service. Render may spin down an inactive free service, but Turso keeps
 the user data independently.
 
 ## Any Docker host
