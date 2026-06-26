@@ -1,66 +1,89 @@
-# Dialectic
+# Dialectic Alpha
 
-An AI debate arena where a user argues a motion against an AI opponent and receives
-scores for logic, evidence, clarity, and relevance.
+AI debate arena where users practice live arguments against an AI opponent or another user, receive rubric-based scores, and build an ELO ranking over time.
 
-## Run it
+Live site: [https://dialectic-alpha.onrender.com](https://dialectic-alpha.onrender.com)
+
+## What it does
+
+- Debate against AI in 3-round or 5-round formats.
+- Choose your stance, then the AI always argues the opposite side.
+- Pick the difficulty: Baby, Adult, or Harvey Specter.
+- Get judged on logic, evidence, clarity, and relevance.
+- Gain or lose ELO depending on your score and difficulty.
+- Create an account, log in, and keep your ELO saved.
+- See debate history with green results for wins and red results for losses.
+- View a leaderboard ranked by account ELO.
+- Change the app language between English, Portuguese, Chinese, and Hebrew.
+- Use microphone input and AI voice when the required API keys are configured.
+- Match against another user online through ELO-based matchmaking.
+
+## AI setup
+
+The app supports Gemini for free-tier text generation and judging.
+
+Recommended Render environment variables:
+
+```env
+AI_PROVIDER=gemini
+GEMINI_MODEL=gemini-3.1-flash-lite
+GEMINI_API_KEY=your_google_gemini_api_key
+TURSO_DATABASE_URL=your_turso_database_url
+TURSO_AUTH_TOKEN=your_turso_auth_token
+NODE_ENV=production
+```
+
+OpenAI is optional and mainly used for microphone transcription and higher-quality text-to-speech:
+
+```env
+OPENAI_API_KEY=your_openai_api_key
+```
+
+If no AI key is configured, the app still runs in Alpha fallback mode so the interface can be tested.
+
+## ELO rules
+
+- Baby: scores below 50/100 lose ELO.
+- Adult: scores below 40/100 lose ELO.
+- Harvey Specter: scores below 30/100 lose ELO.
+- Higher scores gain more ELO.
+- Maximum ELO gain per debate is +30.
+
+## Tech stack
+
+- Node.js HTTP server
+- Static HTML/CSS/JavaScript frontend
+- Turso database in production
+- Local SQLite fallback for development
+- Gemini API for AI opponent and judging
+- Optional OpenAI API for speech features
+- Render for hosting
+
+## Run locally
 
 Requires Node.js 20 or newer.
 
 ```bash
 cp .env.example .env
-# Add a Gemini API key for free-tier live debate and judging.
+npm install
 npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Then open:
 
-With `GEMINI_API_KEY`, the app uses Gemini for live debate and judging. Without a text
-AI key, it runs in Alpha fallback mode so the complete flow remains testable.
+[http://localhost:3000](http://localhost:3000)
 
-## MVP architecture
+## Deploy
 
-- Lightweight Node HTTP server
-- Static responsive frontend
-- Gemini API free tier for the opponent and judge
-- Structured Outputs for reliable rubric scores
-- Separate opponent and judge prompts to reduce self-scoring bias
-- Moderation before generated debate responses
-- Optional microphone recording with OpenAI `gpt-4o-mini-transcribe`
-- Optional spoken replies with OpenAI `gpt-4o-mini-tts`; browser voices remain a fallback
-- Browser-local accounts with persistent ELO and debate totals
-- Per-user debate history with win, loss, draw, score, rubric, and ELO changes
-- Salted PBKDF2 password hashes with remembered or session-only sign-in
-- Persistent English, Portuguese, Chinese, and Hebrew localization with RTL support
-- Local-account ELO leaderboard with ranking and tie-breaks
-- AI opponent and judge feedback locked to the selected language
-- Three-round or five-round debate formats
-- Round-aware opponent responses that cannot reuse earlier rebuttals
-- Difficulty-specific ELO floors with score-scaled gains capped at +30
-- Synthesized boxing-bell round transitions and animated gavel verdicts
+This project is configured for Render using `render.yaml`.
 
-## ELO rules
+1. Push the repository to GitHub.
+2. Create a new Render web service or Blueprint from the repository.
+3. Add the environment variables listed above.
+4. Deploy.
 
-- Baby: scores below 50 lose ELO.
-- Adult: scores below 40 lose ELO.
-- Harvey Specter: scores below 30 lose ELO.
-- The threshold itself is neutral.
-- Above the threshold, higher scores gain progressively more ELO, capped at +30.
+Render free services may sleep after inactivity, so the first load can be slow.
 
-Accounts, password hashes, sessions, ELO, rankings, and history are persisted in Turso
-in production, with a local SQLite fallback for development. See `DEPLOYMENT.md`.
+## Important note
 
-## Next production layer
-
-For human-vs-human debates, add:
-
-1. Postgres for users, debates, turns, ratings, and reports
-2. Authentication and age-aware safety controls
-3. WebSockets for rooms, presence, timers, and reconnects
-4. A matchmaking queue using topic tags and ELO bands
-5. Server-authoritative turns and immutable transcripts
-6. A second-pass judge or judge panel for disputed/high-stakes matches
-
-AI scores should be presented as rubric-based feedback, not objective truth. Before
-ranking users, calibrate the judge against a diverse human-scored evaluation set and
-measure viewpoint, dialect, verbosity, and citation-style bias.
+AI judging should be treated as debate practice feedback, not absolute truth. The score is meant to help users improve their arguments, not decide who is objectively right.
